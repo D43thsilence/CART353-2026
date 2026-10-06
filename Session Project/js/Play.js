@@ -113,6 +113,10 @@ class Play extends Phaser.Scene {
         //     Phaser.Geom.Circle.CircumferencePoint(circle, i / 20 * Phaser.Math.PI2, circle);
         //     this.circles.push(circle);
         // }
+
+        this.input.on('pointerdown', () => {
+            this.scene.start('BulletScene01');
+        });
     }
 
 
@@ -130,7 +134,7 @@ class Play extends Phaser.Scene {
     // }
 
     handleInput() {
-        // Handles player 1's movement and the size changes and attacks of both players
+        // Handles player 1's movement and plays the walking animation
         this.input.keyboard.on('keydown', event => {
 
             if (event.keyCode === 87) {
@@ -156,7 +160,7 @@ class Play extends Phaser.Scene {
             };
         });
 
-        // Makes player 1 stop moving when the movement keys are released
+        // Makes player 1 stop moving when the movement keys are released and plays the idle animation
         this.input.keyboard.on('keyup', event => {
 
             if (event.keyCode === 87) {
