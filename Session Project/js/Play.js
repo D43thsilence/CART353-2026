@@ -3,6 +3,7 @@ class Play extends Phaser.Scene {
         super({
             key: `Play`
         });
+        this.particles = [];
     }
 
     create() {
@@ -23,7 +24,7 @@ class Play extends Phaser.Scene {
         // backgroundColorLayer.setCollisionByProperty({ collides: true })
 
         // Creates the the player avatar and his collisions
-        this.avatar = this.physics.add.sprite(88, 115, `playerCharacterIdle`);
+        this.avatar = this.physics.add.sprite(400, 700, `playerCharacterIdle`);
         this.avatar.scale = 1;
         this.avatar.speed = 500;
         this.avatar.setMaxVelocity(140, 140);
@@ -41,14 +42,14 @@ class Play extends Phaser.Scene {
         // this.spawnedEnemies = 0
         // this.maxEnemyCount = 4
 
-        // // Sets up the display of the player's score
-        // let style = {
-        //     fontFamily: `sans-serif`,
-        //     fontSize: `12px`,
-        //     fill: `#ffffff`,
-        // };
-        // this.score = 0
-        // this.scoreText = this.add.text(88, 78, 'Score = 0', style);
+        // Sets up the display of the player's score
+        let style = {
+            fontFamily: `sans-serif`,
+            fontSize: `12px`,
+            fill: `#ffffff`,
+        };
+        this.score = 0
+        this.scoreText = this.add.text(88, 78, 'Score = 0', style);
 
         // Create the basic controls
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -56,7 +57,7 @@ class Play extends Phaser.Scene {
         // Sets up the various cameras in the game
         this.cameras.main.setSize(800, 800);
         this.cameras.main.startFollow(this.avatar, 1, 1);
-        this.cameras.main.setZoom(3);
+        // this.cameras.main.setZoom(3);
         // this.cam2 = this.cameras.add(200, 0, 200, 160);
         // this.cam3 = this.cameras.add(0, 160, 200, 160);
         // this.cam4 = this.cameras.add(200, 160, 200, 160);
@@ -96,12 +97,18 @@ class Play extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, 800, 800);
         this.avatar.setCollideWorldBounds(true);
 
-        // Creates the particles
-        // this.add.particles(40, 40, 'idle animation'), {
-        //     speed: 100,
-        //     lifespan: 3000,
-        //     gravityY: 0.18
-        // }
+        // this.emitter = this.add.particles(100, 100, 'marisaProjectile', {
+        //     angle: { min: 240, max: 300 },
+        //     speed: { min: 200, max: 300 },
+        //     lifespan: 4000,
+        //     gravityY: 180,
+        //     quantity: 2,
+        //     bounce: 0.4,
+        //     // bounds: new Phaser.Geom.Rectangle(-100, -200, 1000, 750)
+        // });
+        // this.emitter.particleBringToTop = false;
+        // this.emitter.enableFilters();
+        // this.emitter.filters.external.addBokeh(0.5, 10, 0.2)
 
         // Stroke Circle example
         // this.graphics = this.add.graphics({ lineStyle: { color: 0x00ff00 } });
@@ -114,15 +121,72 @@ class Play extends Phaser.Scene {
         //     this.circles.push(circle);
         // }
 
-        this.input.on('pointerdown', () => {
-            this.scene.start('BulletScene01');
+        // Creates the transition areas that lead to the other scenes
+        // this.input.on('pointerdown', () => {
+        //     this.scene.start('BulletScene01');
+        // });
+
+        this.avatar.body.onOverlap = true;
+
+        const transitionBox = this.physics.add.image(100, 500, 'marisaProjectile');
+
+        const transitionBox2 = this.physics.add.image(200, 300, 'marisaProjectile');
+
+        const transitionBox3 = this.physics.add.image(400, 200, 'marisaProjectile');
+
+        const transitionBox4 = this.physics.add.image(600, 300, 'marisaProjectile');
+
+        const transitionBox5 = this.physics.add.image(700, 500, 'marisaProjectile');
+
+        // const transitionBoxes = this.physics.add.staticGroup({
+        //     key: 'marisaProjectile',
+        //     frameQuantity: 10
+        // });
+
+        // Phaser.Actions.PlaceOnRectangle(
+        //     transitionBoxes.getChildren(),
+        //     new Phaser.Geom.Rectangle(84, 84, 616, 416)
+        // );
+
+        // transitionBoxes.refresh();
+
+        this.physics.add.overlap(this.avatar, transitionBox);
+        this.physics.add.overlap(this.avatar, transitionBox2);
+        this.physics.add.overlap(this.avatar, transitionBox3);
+        this.physics.add.overlap(this.avatar, transitionBox4);
+        this.physics.add.overlap(this.avatar, transitionBox5);
+        // this.physics.add.overlap(this.avatar, transitionBoxes);
+
+        this.physics.world.on('overlap', (gameObject1, gameObject2, body1, body2) => {
+            if (gameObject2 == transitionBox) {
+                this.scene.start('BulletScene01');
+            }
+            if (gameObject2 == transitionBox2) {
+                this.scene.start('BulletScene02');
+            }
+            // gameObject1.setAlpha(0.5);
+            // gameObject2.setAlpha(0.5);
+
         });
+
+        // this.rect = this.add.rectangle(400, 300, 300, 200).setStrokeStyle(2, 0xffff00);
+
+
+        // this.transitionBoxes = [];
+        // for (let i = 0; i < 5; i++) {
+        //     transitionBox = Phaser.Geom.Circle.Clone(circle);
+        //     this.transitionBoxes.push;
+        // }
+        // for (let i = 0; i < 5; i++) {
+        //     this.physics.add.overlap(this.avatar, this.transitionBoxes[i], this.sceneSwap, null, this);
+        // }
     }
 
 
-    // Continuously checks for player input and manages the number of enemies and when/where to spawn them
+    // Continuously checks for player input
     update() {
         this.handleInput();
+
     }
 
     // destroyEnemy(playerCharacter, enemy) {
@@ -134,7 +198,7 @@ class Play extends Phaser.Scene {
     // }
 
     handleInput() {
-        // Handles player 1's movement and plays the walking animation
+        // Handles player 1's movement and the size changes and attacks of both players
         this.input.keyboard.on('keydown', event => {
 
             if (event.keyCode === 87) {
@@ -160,7 +224,7 @@ class Play extends Phaser.Scene {
             };
         });
 
-        // Makes player 1 stop moving when the movement keys are released and plays the idle animation
+        // Makes player 1 stop moving when the movement keys are released
         this.input.keyboard.on('keyup', event => {
 
             if (event.keyCode === 87) {

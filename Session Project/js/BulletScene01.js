@@ -77,7 +77,7 @@ class BulletScene01 extends Phaser.Scene {
         this.avatar.play('idle animation');
         this.walk = false;
 
-        // Creates the Bullets
+        // Creates the Bullets that will be fired
         this.bullets = this.add.existing(
             new Bullets(this.physics.world, this, { name: 'bullets' })
         );
@@ -91,6 +91,14 @@ class BulletScene01 extends Phaser.Scene {
         );
         this.enemyBullets.createMultiple({
             key: 'enemyBullet',
+            quantity: 5
+        });
+
+        this.enemyBigBullets = this.add.existing(
+            new Bullets(this.physics.world, this, { name: 'enemyBigBullets' })
+        );
+        this.enemyBigBullets.createMultiple({
+            key: 'enemyBigBullet',
             quantity: 5
         });
 
@@ -131,11 +139,21 @@ class BulletScene01 extends Phaser.Scene {
             repeat: -1
         });
 
+        // Makes the enemy fire bullets
         this.enemyFiring = this.time.addEvent({
             delay: 750,
             loop: true,
             callback: () => {
                 this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+            }
+        });
+
+        // Makes the enemy fire bigger bullets
+        this.enemyBigFiring = this.time.addEvent({
+            delay: 550,
+            loop: true,
+            callback: () => {
+                this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
             }
         });
 
@@ -185,6 +203,19 @@ class BulletScene01 extends Phaser.Scene {
             // };
         });
 
+        this.physics.add.overlap(this.avatar, this.enemyBigBullets, (avatar, bullet) => {
+            const { x, y } = bullet.body.center;
+
+            bullet.disableBody(true, true);
+            // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+            this.plasma.emitParticleAt(x, y);
+            this.avatar.lifePoints -= 1;
+
+            // if (avatar.lifePoints <= 0) {
+
+            // };
+        });
+
         this.physics.world.on('worldbounds', (body) => {
             body.gameObject.onWorldBounds();
         });
@@ -201,8 +232,8 @@ class BulletScene01 extends Phaser.Scene {
 
         this.controlBullets();
 
-        this.stars.y += 1;
-        this.stars.y %= 512;
+        // this.stars.y += 1;
+        // this.stars.y %= 512;
 
         this.text.setText([this.bullets.poolInfo(), this.enemyBullets.poolInfo()]);
     }
@@ -309,6 +340,29 @@ class BulletScene01 extends Phaser.Scene {
                 }
                 else {
                     enemyBulletControl.setVelocityY(150);
+                }
+            }
+        });
+
+        // Creates an array containing the bigger bullets fired by the enemy and controls their behavior
+        const enemyBigBulletControl = this.enemyBigBullets.getChildren();
+        enemyBigBulletControl.forEach(enemyBigBulletControl => {
+            if (enemyBigBulletControl.active) {
+                let dynamicVelocityX = 0;
+                if (enemyBigBulletControl.x >= 400) {
+                    dynamicVelocityX -= 2;
+                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+                }
+                else {
+                    dynamicVelocityX += 2;
+                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+                }
+
+                if (enemyBulletControl.y <= 400) {
+                    enemyBigBulletControl.setVelocityY(300);
+                }
+                else {
+                    enemyBigBulletControl.setVelocityY(150);
                 }
             }
         });
