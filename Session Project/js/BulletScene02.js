@@ -59,6 +59,8 @@ class BulletScene02 extends Phaser.Scene {
     stars;
     text;
 
+    points;
+
     create() {
         // Creates the Background
         this.stars = this.add.blitter(0, 0, 'starfield');
@@ -125,6 +127,7 @@ class BulletScene02 extends Phaser.Scene {
 
 
         // creates the enemey and makes him move and fire
+        // Here you can draw the lines that the enemy's projectiles will follow
         this.enemy = this.physics.add.sprite(256, 128, 'enemy', 1);
         this.enemy.setBodySize(160, 64);
         // Hit points
@@ -281,6 +284,7 @@ class BulletScene02 extends Phaser.Scene {
             debug.clear();
             const curve = new Phaser.Curves.Spline(points);
             curve.draw(graphics, 64);
+            // this.points = this.curve.points;
             this.curves.push(curve);
         });
 
@@ -288,6 +292,8 @@ class BulletScene02 extends Phaser.Scene {
         //     const follower = this.add.follower(curves[i], 50, 350, 'marisaprojectile')
         //     // this.followers.push(follower);
         // }
+
+        this.path = { t: 0, vec: new Phaser.Math.Vector2() };
 
     }
 
@@ -305,6 +311,8 @@ class BulletScene02 extends Phaser.Scene {
 
         this.text.setText([this.bullets.poolInfo(), this.enemyBullets.poolInfo()]);
         // this.scoreText = this.text.setText(this.drawState);
+
+
     }
 
     handleInput() {
@@ -366,12 +374,47 @@ class BulletScene02 extends Phaser.Scene {
         });
     }
 
+    // Creates the bullets that will follow the paths drawn by the player. The more paths you draw, the more bullets will be fired. The bullets will follow the paths in the order they were drawn.
     createFollower() {
         this.input.on('pointerup', () => {
-            for (let i = 0; i < 5; i++) {
-                const follower = this.add.follower(curve[0], 50 + (i * 5), 350, 'marisaprojectile')
-                follower.startFollow(4000);
+            for (let i = 0; i < this.curves.length; i++) {
+                this.tweens.add({
+                    targets: this.curves[i],
+                    t: 1,
+                    ease: 'Sine.easeInOut',
+                    duration: 2000,
+                    yoyo: true,
+                    repeat: -1
+                });
+
+                this.curves[i].getPoint(this.path.t, this.path.vec);
+
+                // const follower = this.physics.add.sprite(this.path.vec.x, this.path.vec.y, `playerCharacterIdle`);
+
+                const follower = this.add.follower(this.curves[i], this.path.vec.x, this.path.vec.y, 'marisaprojectile')
+                follower.startFollow({
+                    duration: 4000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
                 this.followers.push(follower);
+
+                const followingBullet = this.physics.add.sprite(follower.x, follower.y, 'bullet');
+                // followingBullet.setBounce(1);
+                // followingBullet.setCollideWorldBounds(true);
+                followingBullet.setVelocity(this.avatar.x - follower.x, this.avatar.y - follower.y);
+
+
+                this.physics.add.overlap(this.avatar, followingBullet, (avatar, followingBullet) => {
+                    const { x, y } = followingBullet.body.center;
+
+                    followingBullet.disableBody(true, true);
+                    // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+                    this.plasma.emitParticleAt(x, y);
+                    this.avatar.lifePoints -= 1;
+                });
+
             }
         });
     }

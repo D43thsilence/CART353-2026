@@ -164,6 +164,15 @@ class Play extends Phaser.Scene {
             if (gameObject2 == transitionBox2) {
                 this.scene.start('BulletScene02');
             }
+            if (gameObject2 == transitionBox3) {
+                this.scene.start('BulletScene03');
+            }
+            if (gameObject2 == transitionBox4) {
+                this.scene.start('BulletScene04');
+            }
+            if (gameObject2 == transitionBox5) {
+                this.scene.start('BulletScene05');
+            }
             // gameObject1.setAlpha(0.5);
             // gameObject2.setAlpha(0.5);
 

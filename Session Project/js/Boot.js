@@ -33,6 +33,13 @@ class Boot extends Phaser.Scene {
             frameHeight: 64,
             endFrame: 16
         });
+        this.load.image(`marisaProjectile`, `marisaProjectile.png`);
+        // this.load.spritesheet(`enemy`, `Aya_Ground_Walk.png`, {
+        //     frameWidth: 64,
+        //     frameHeight: 64,
+        //     endFrame: 16
+        // });
+
         // this.load.tilemapTiledJSON(`dungeon`, `Dungeon_01.tmj`)
 
         // Switches to the next scene

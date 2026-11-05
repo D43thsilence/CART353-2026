@@ -46,10 +46,14 @@ class BulletScene01 extends Phaser.Scene {
         super({
             key: `BulletScene01`
         });
+        this.followerBullets = [];
+        this.state = "dialogue";
+        this.dialogueText = [];
     }
     bullets;
     enemy;
     enemyBullets;
+    enemyBigBullets;
     enemyFiring;
     enemyMoving;
     plasma;
@@ -123,6 +127,7 @@ class BulletScene01 extends Phaser.Scene {
 
 
         // creates the enemey and makes him move and fire
+        // The enemy will fire large projectiles and smaller projectiles will follow close by
         this.enemy = this.physics.add.sprite(256, 128, 'enemy', 1);
         this.enemy.setBodySize(160, 64);
         // Hit points
@@ -144,7 +149,9 @@ class BulletScene01 extends Phaser.Scene {
             delay: 750,
             loop: true,
             callback: () => {
-                this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                if (this.state === "gameplay") {
+                    this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                }
             }
         });
 
@@ -153,7 +160,55 @@ class BulletScene01 extends Phaser.Scene {
             delay: 550,
             loop: true,
             callback: () => {
-                this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                if (this.state === "gameplay") {
+                    this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                }
+            }
+        });
+
+        // Makes the bullets fired by the enemy spawn smaller bullets that follow the player
+        this.time.addEvent({
+            delay: 1250,
+            loop: true,
+            callback: () => {
+                if (this.state === "gameplay") {
+                    const enemyBulletControl = this.enemyBullets.getChildren();
+                    enemyBulletControl.forEach(enemyBulletControl => {
+                        for (let i = 0; i < 4; i++) {
+
+                            const followingBullet = this.physics.add.sprite(enemyBulletControl.x, enemyBulletControl.y, 'bullet');
+                            // followingBullet.setBounce(1);
+                            // followingBullet.setCollideWorldBounds(true);
+                            followingBullet.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+                            this.followerBullets.push(followingBullet);
+
+                            this.physics.add.overlap(this.avatar, followingBullet, (avatar, followingBullet) => {
+                                const { x, y } = followingBullet.body.center;
+
+                                followingBullet.disableBody(true, true);
+                                // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+                                this.plasma.emitParticleAt(x, y);
+                                this.avatar.lifePoints -= 1;
+
+                                // if (avatar.lifePoints <= 0) {
+
+                                // };
+                            });
+                        };
+                    });
+                }
+            }
+        });
+
+        this.time.addEvent({
+            delay: 1550,
+            loop: true,
+            callback: () => {
+                if (this.state === "gameplay") {
+                    for (let i = 0; i < this.followerBullets.length; i++) {
+                        this.followerBullets[i].setVelocity(this.avatar.x - this.followerBullets[i].x, this.avatar.y - this.followerBullets[i].y);
+                    }
+                }
             }
         });
 
@@ -222,10 +277,13 @@ class BulletScene01 extends Phaser.Scene {
 
         this.input.on('pointerdown', () => {
             this.bullets.fire(this.avatar.x, this.avatar.y, 0, -300);
+            this.state = "gameplay";
         });
+
+
     }
 
-    update() {
+    update(time, delta) {
         if (this.avatar.lifePoints >= 0) {
             this.handleInput();
         };
@@ -304,7 +362,7 @@ class BulletScene01 extends Phaser.Scene {
         const bulletControl = this.bullets.getChildren();
         bulletControl.forEach(bulletControl => {
             if (bulletControl.active) {
-                if (bulletControl.x >= 400) {
+                if (bulletControl.y >= 400) {
                     bulletControl.setVelocityX(20);
                 }
                 else {
@@ -341,31 +399,66 @@ class BulletScene01 extends Phaser.Scene {
                 else {
                     enemyBulletControl.setVelocityY(150);
                 }
+
+                // for (let i = 0, len = enemyBulletControl.length; i < len; i++) {
+                // for (let i = 0; i < 4; i++) {
+
+                //     const followingBullet = this.physics.add.sprite(enemyBulletControl.x, enemyBulletControl.y, 'bullet');
+                //     // followingBullet.setBounce(1);
+                //     // followingBullet.setCollideWorldBounds(true);
+                //     followingBullet.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+
+
+                //     this.physics.add.overlap(this.avatar, followingBullet, (avatar, followingBullet) => {
+                //         const { x, y } = followingBullet.body.center;
+
+                //         followingBullet.disableBody(true, true);
+                //         // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+                //         this.plasma.emitParticleAt(x, y);
+                //         this.avatar.lifePoints -= 1;
+
+                // if (avatar.lifePoints <= 0) {
+
+                // };
+                //     });
+                //     this.followerBullets.push(followingBullet);
+                //     // if (i == 4) {
+                //     //     i = 0;
+                //     // }
+                // }
+                // this.time.addEvent({
+                //     delay: 750,
+                //     loop: true,
+                // repeat: 9, 
+                //     callback: () => {
+                //         this.enemyBullets.fire(enemyBulletControl.x, enemyBulletControl.y, Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+                //     }
+                // });
             }
         });
 
         // Creates an array containing the bigger bullets fired by the enemy and controls their behavior
-        const enemyBigBulletControl = this.enemyBigBullets.getChildren();
-        enemyBigBulletControl.forEach(enemyBigBulletControl => {
-            if (enemyBigBulletControl.active) {
-                let dynamicVelocityX = 0;
-                if (enemyBigBulletControl.x >= 400) {
-                    dynamicVelocityX -= 2;
-                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
-                }
-                else {
-                    dynamicVelocityX += 2;
-                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
-                }
+        // const enemyBigBulletControl = this.enemyBigBullets.getChildren();
+        // enemyBigBulletControl.forEach(enemyBigBulletControl => {
+        //     if (enemyBigBulletControl.active) {
+        //         let dynamicVelocityX = 0;
+        //         if (enemyBigBulletControl.x >= 400) {
+        //             dynamicVelocityX -= 2;
+        //             enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+        //         }
+        //         else {
+        //             dynamicVelocityX += 2;
+        //             enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+        //         }
 
-                if (enemyBulletControl.y <= 400) {
-                    enemyBigBulletControl.setVelocityY(300);
-                }
-                else {
-                    enemyBigBulletControl.setVelocityY(150);
-                }
-            }
-        });
+        //         if (enemyBulletControl.y <= 400) {
+        //             enemyBigBulletControl.setVelocityY(300);
+        //         }
+        //         else {
+        //             enemyBigBulletControl.setVelocityY(150);
+        //         }
+        //     }
+        // });
     }
 
 }
