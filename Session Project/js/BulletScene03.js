@@ -5,6 +5,7 @@ class BulletScene03 extends Phaser.Scene {
         });
         this.followerBullets = [];
         this.state = "dialogue";
+        this.dialogueText = [];
     }
     bullets;
     enemy;

@@ -3,7 +3,10 @@ class BulletScene05 extends Phaser.Scene {
         super({
             key: `BulletScene05`
         });
-
+        this.state = "dialogue";
+        this.dialogueText = [];
+        this.summons = [];
+        this.summonsBullets = [];
     }
     bullets;
     enemy;
@@ -52,19 +55,19 @@ class BulletScene05 extends Phaser.Scene {
             quantity: 5
         });
 
-        this.enemyBigBullets = this.add.existing(
-            new Bullets(this.physics.world, this, { name: 'enemyBigBullets' })
+        this.enemySummonBullets = this.add.existing(
+            new Bullets(this.physics.world, this, { name: 'enemySummonBullets' })
         );
-        this.enemyBigBullets.createMultiple({
-            key: 'enemyBigBullet',
+        this.enemySummonBullets.createMultiple({
+            key: 'enemySummonBullet',
             quantity: 5
         });
 
         // Sets up the player's camera
-        this.cameras.main.setSize(800, 800);
+        this.cameras.main.setSize(800, 750);
         // this.cameras.main.startFollow(this.avatar, 1, 1);
         // this.cameras.main.setZoom(3);
-        this.cameras.main.setBounds(0, 0, 800, 800);
+        this.cameras.main.setBounds(0, 0, 800, 750);
 
 
         // Creates the pixelated transition & visual effect when exiting the title screen and entering the game
@@ -76,45 +79,93 @@ class BulletScene05 extends Phaser.Scene {
         });
 
         // Sets the bounds of the world
-        this.physics.world.setBounds(0, 0, 800, 800);
+        this.physics.world.setBounds(0, 0, 800, 750);
         this.avatar.setCollideWorldBounds(true);
 
 
         // creates the enemey and makes him move and fire
-        this.enemy = this.physics.add.sprite(256, 128, 'enemy', 1);
+        this.enemy = this.physics.add.sprite(400, 375, 'enemy', 1);
         this.enemy.setBodySize(160, 64);
         // Hit points
         this.enemy.state = 5;
 
-        this.enemyMoving = this.tweens.add({
-            targets: this.enemy.body.velocity,
-            props: {
-                x: { from: 150, to: -150, duration: 4000 },
-                y: { from: 50, to: -50, duration: 2000 }
-            },
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1
-        });
+        // this.enemyMoving = this.tweens.add({
+        //     targets: this.enemy.body.velocity,
+        //     props: {
+        //         x: { from: 150, to: -150, duration: 4000 },
+        //         y: { from: 50, to: -50, duration: 2000 }
+        //     },
+        //     ease: 'Sine.easeInOut',
+        //     yoyo: true,
+        //     repeat: -1
+        // });
 
         // Makes the enemy fire bullets
-        this.enemyFiring = this.time.addEvent({
-            delay: 750,
-            loop: true,
-            callback: () => {
-                this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
-            }
-        });
+        // this.enemyFiring = this.time.addEvent({
+        //     delay: 750,
+        //     loop: true,
+        //     callback: () => {
 
-        // Makes the enemy fire bigger bullets
-        this.enemyBigFiring = this.time.addEvent({
+        //         this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+        //     }
+        // });
+
+        // Creates the summons
+        for (let i = 0; i <= 3; i++) {
+            if (i == 0) {
+                const summon = this.physics.add.sprite(30, 60, 'enemySummon', 1);
+                summon.setBodySize(64, 64);
+                this.summons.push(summon);
+            }
+            else if (i == 1) {
+                const summon = this.physics.add.sprite(770, 60, 'enemySummon', 1);
+                summon.setBodySize(64, 64);
+                this.summons.push(summon);
+            }
+            else if (i == 2) {
+                const summon = this.physics.add.sprite(770, 730, 'enemySummon', 1);
+                summon.setBodySize(64, 64);
+                this.summons.push(summon);
+            }
+            else if (i == 3) {
+                const summon = this.physics.add.sprite(30, 730, 'enemySummon', 1);
+                summon.setBodySize(64, 64);
+                this.summons.push(summon);
+            }
+        }
+
+        // Makes the summons fire bullets
+        this.enemySummonFiring = this.time.addEvent({
             delay: 550,
             loop: true,
             callback: () => {
-                this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                if (this.state === "gameplay") {
+                    for (let i = 0; i < this.summons.length; i++) {
+                        const summon = this.summons[i];
+                        if (summon.active) {
+                            const summonsBullet = this.physics.add.sprite(summon.x, summon.y, 'bullet');
+                            // summonsBullet.setBounce(1);
+                            // summonsBullet.setCollideWorldBounds(true);
+                            summonsBullet.setVelocity((this.enemy.x - summonsBullet.x) * 0.2, (this.enemy.y - summonsBullet.y) * 0.2);
+                            this.summonsBullets.push(summonsBullet);
+
+                            this.physics.add.overlap(this.avatar, summonsBullet, (avatar, summonsBullet) => {
+                                const { x, y } = summonsBullet.body.center;
+
+                                summonsBullet.disableBody(true, true);
+                                // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+                                this.plasma.emitParticleAt(x, y);
+                                this.avatar.lifePoints -= 1;
+
+                                // if (avatar.lifePoints <= 0) {
+
+                                // };
+                            });
+                        };
+                    }
+                }
             }
         });
-
 
         // Creates the hit effects
         this.plasma = this.add.particles(0, 0, 'marisaProjectile', {
@@ -127,6 +178,16 @@ class BulletScene05 extends Phaser.Scene {
         });
 
         this.text = this.add.text(0, 480, '', {
+            font: '16px monospace',
+            fill: 'aqua'
+        });
+
+        this.HPText = this.add.text(0, 100, '', {
+            font: '16px monospace',
+            fill: 'aqua'
+        });
+
+        this.stats = this.add.text(100, 700, '', {
             font: '16px monospace',
             fill: 'aqua'
         });
@@ -180,9 +241,8 @@ class BulletScene05 extends Phaser.Scene {
 
         this.input.on('pointerdown', () => {
             this.bullets.fire(this.avatar.x, this.avatar.y, 0, -300);
+            this.state = "gameplay";
         });
-
-        this.current = "A";
 
     }
 
@@ -192,12 +252,16 @@ class BulletScene05 extends Phaser.Scene {
         };
 
         this.controlBullets();
+        this.controlSummons();
 
         // this.stars.y += 1;
         // this.stars.y %= 512;
 
         this.text.setText([this.bullets.poolInfo(), this.enemyBullets.poolInfo()]);
 
+        this.HPText.setText(this.avatar.lifePoints + " HP");
+
+        this.stats.setText(this.avatar.x + " " + this.avatar.y + " " + this.avatar.body.velocity.x + " " + this.avatar.body.velocity.y);
     }
 
     handleInput() {
@@ -259,6 +323,30 @@ class BulletScene05 extends Phaser.Scene {
         });
     }
 
+    controlSummons() {
+        for (let i = 0; i < this.summons.length; i++) {
+            const summon = this.summons[i];
+            if (summon.active) {
+                if (summon.x <= 30 && summon.y <= 60) {
+                    summon.setVelocityX(100);
+                    summon.setVelocityY(0);
+                }
+                else if (summon.x >= 770 && summon.y <= 60) {
+                    summon.setVelocityX(0);
+                    summon.setVelocityY(100);
+                }
+                else if (summon.x >= 770 && summon.y >= 730) {
+                    summon.setVelocityX(-100);
+                    summon.setVelocityY(0);
+                }
+                else if (summon.x <= 30 && summon.y >= 730) {
+                    summon.setVelocityX(0);
+                    summon.setVelocityY(-100);
+                }
+            }
+        }
+    }
+
     // Controls the movement of bullets fired by both the player and the enemy
     controlBullets() {
 
@@ -306,28 +394,48 @@ class BulletScene05 extends Phaser.Scene {
             }
         });
 
-        // Creates an array containing the bigger bullets fired by the enemy and controls their behavior
-        const enemyBigBulletControl = this.enemyBigBullets.getChildren();
-        enemyBigBulletControl.forEach(enemyBigBulletControl => {
-            if (enemyBigBulletControl.active) {
-                let dynamicVelocityX = 0;
-                if (enemyBigBulletControl.x >= 400) {
-                    dynamicVelocityX -= 2;
-                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
-                }
-                else {
-                    dynamicVelocityX += 2;
-                    enemyBigBulletControl.setVelocityX(dynamicVelocityX);
-                }
+        // Creates an array containing the bullets fired by the summons and controls their behavior
+        // for (let i = 0; i < this.summonsBullets.length; i++) {
+        //     const summonsBulletControl = this.summonsBullets[i];
+        //     if (summonsBulletControl.active) {
+        //         if (summonsBulletControl.x >= 400) {
+        //             summonsBulletControl.setVelocityX(20);
+        //         }
+        //         else {
+        //             summonsBulletControl.setVelocityX(-20);
+        //         }
 
-                if (enemyBulletControl.y <= 400) {
-                    enemyBigBulletControl.setVelocityY(300);
-                }
-                else {
-                    enemyBigBulletControl.setVelocityY(150);
-                }
-            }
-        });
+        //         if (summonsBulletControl.y <= 400) {
+        //             summonsBulletControl.setVelocityY(300);
+        //         }
+        //         else {
+        //             summonsBulletControl.setVelocityY(150);
+        //         }
+        //     }
+        // }
+
+        // Creates an array containing the bigger bullets fired by the enemy and controls their behavior
+        // const enemyBigBulletControl = this.enemyBigBullets.getChildren();
+        // enemyBigBulletControl.forEach(enemyBigBulletControl => {
+        //     if (enemyBigBulletControl.active) {
+        //         let dynamicVelocityX = 0;
+        //         if (enemyBigBulletControl.x >= 400) {
+        //             dynamicVelocityX -= 2;
+        //             enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+        //         }
+        //         else {
+        //             dynamicVelocityX += 2;
+        //             enemyBigBulletControl.setVelocityX(dynamicVelocityX);
+        //         }
+
+        //         if (enemyBulletControl.y <= 400) {
+        //             enemyBigBulletControl.setVelocityY(300);
+        //         }
+        //         else {
+        //             enemyBigBulletControl.setVelocityY(150);
+        //         }
+        //     }
+        // });
     }
 
 }

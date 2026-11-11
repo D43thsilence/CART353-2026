@@ -13,7 +13,7 @@ let config = {
     type: Phaser.AUTO,
     // Defines game dimensions
     width: 800,
-    height: 800,
+    height: 750,
     // Creates basic physics
     physics: {
         default: 'arcade',

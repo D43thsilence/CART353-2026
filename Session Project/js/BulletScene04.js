@@ -3,7 +3,8 @@ class BulletScene04 extends Phaser.Scene {
         super({
             key: `BulletScene04`
         });
-
+        this.state = "dialogue";
+        this.dialogueText = [];
     }
     bullets;
     enemy;

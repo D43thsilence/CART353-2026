@@ -46,6 +46,8 @@ class BulletScene02 extends Phaser.Scene {
         super({
             key: `BulletScene02`
         });
+        this.state = "dialogue";
+        this.dialogueText = [];
         this.curves = [];
         this.followers = [];
     }
