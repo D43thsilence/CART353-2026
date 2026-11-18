@@ -5,6 +5,10 @@ class BulletScene04 extends Phaser.Scene {
         });
         this.state = "dialogue";
         this.dialogueText = [];
+        this.movementPoints = [];
+        this.storedMovementPoints = [];
+        this.stars = [];
+        this.starsTrails = [];
     }
     bullets;
     enemy;
@@ -13,14 +17,14 @@ class BulletScene04 extends Phaser.Scene {
     enemyMoving;
     plasma;
     avatar;
-    stars;
+    // stars;
     text;
 
     create() {
         // Creates the Background
-        this.stars = this.add.blitter(0, 0, 'starfield');
-        this.stars.create(0, 0);
-        this.stars.create(0, -512);
+        // this.stars = this.add.blitter(0, 0, 'starfield');
+        // this.stars.create(0, 0);
+        // this.stars.create(0, -512);
 
         // Creates the the player avatar and his collisions
         this.avatar = this.physics.add.sprite(200, 350, `playerCharacterIdle`);
@@ -99,23 +103,13 @@ class BulletScene04 extends Phaser.Scene {
         });
 
         // Makes the enemy fire bullets
-        this.enemyFiring = this.time.addEvent({
-            delay: 750,
-            loop: true,
-            callback: () => {
-                this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
-            }
-        });
-
-        // Makes the enemy fire bigger bullets
-        this.enemyBigFiring = this.time.addEvent({
-            delay: 550,
-            loop: true,
-            callback: () => {
-                this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
-            }
-        });
-
+        // this.enemyFiring = this.time.addEvent({
+        //     delay: 750,
+        //     loop: true,
+        //     callback: () => {
+        //         this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+        //     }
+        // });
 
         // Creates the hit effects
         this.plasma = this.add.particles(0, 0, 'marisaProjectile', {
@@ -144,7 +138,7 @@ class BulletScene04 extends Phaser.Scene {
             if (enemy.state <= 0) {
                 enemy.setFrame(3);
                 enemy.body.checkCollision.none = true;
-                this.enemyFiring.remove();
+                // this.enemyFiring.remove();
                 this.enemyMoving.stop();
             }
         });
@@ -175,6 +169,84 @@ class BulletScene04 extends Phaser.Scene {
             // };
         });
 
+        // Creates the points where the enemy will fire bullets from and guide bullets to
+        for (let i = 0; i < 60; i++) {
+            const point = this.add.circle(Phaser.Math.Between(30, 770), Phaser.Math.Between(60, 730), 2, 0x00ff00);
+            this.movementPoints.push(point);
+        }
+
+        // Makes the enemy create bullets at the points
+        for (let i = 0; i < 10; i++) {
+            const star = this.physics.add.sprite(this.movementPoints[i].x, this.movementPoints[i].y, 'star');
+            this.stars.push(star);
+        }
+
+        this.enemyStarsMovement = this.time.addEvent({
+            delay: 2000,
+            loop: true,
+            callback: () => {
+                for (let i = 0; i < this.stars.length; i++) {
+                    let movementPoint = this.movementPoints[Phaser.Math.Between(0, this.movementPoints.length - 1)];
+                    for (let j = 0; j < this.movementPoints.length; j++) {
+                        if (this.storedMovementPoints[j] === movementPoint) {
+                            movementPoint = this.movementPoints[Phaser.Math.Between(0, this.movementPoints.length - 1)];
+                        }
+                        else {
+                            this.tweens.add({
+                                targets: this.stars[i],
+                                props: {
+                                    x: { from: this.stars[i].x, to: movementPoint.x, duration: 2000 },
+                                    y: { from: this.stars[i].y, to: movementPoint.y, duration: 2000 }
+                                },
+                                ease: 'Sine.easeInOut',
+                                yoyo: false,
+                                repeat: 0
+                            });
+                            this.storedMovementPoints.push(movementPoint);
+                            j == 0;
+                        }
+                    }
+
+                    for (let i = 0; i < 2; i++) {
+
+                        const starBullet = this.physics.add.sprite(this.stars[i].x, this.stars[i].y, 'bullet');
+                        // followingBullet.setBounce(1);
+                        // followingBullet.setCollideWorldBounds(true);
+                        starBullet.setVelocity(this.stars[i].x - movementPoint.x, this.stars[i].y - movementPoint.y);
+                        this.starsTrails.push(starBullet);
+
+                        this.physics.add.overlap(this.avatar, starBullet, (avatar, starBullet) => {
+                            const { x, y } = starBullet.body.center;
+
+                            starBullet.disableBody(true, true);
+                            // this.plasma.setSpeedY(0.2 * bullet.body.velocity.y).emitParticleAt(x, y);
+                            this.plasma.emitParticleAt(x, y);
+                            this.avatar.lifePoints -= 1;
+
+                            // if (avatar.lifePoints <= 0) {
+
+                            // };
+                        });
+                    };
+
+                    if (i == this.stars.length - 1) {
+                        this.storedMovementPoints = [];
+                    }
+                }
+            }
+        });
+
+        // this.enemyStarsFiring = this.time.addEvent({
+        //     delay: 2000,
+        //     loop: true,
+        //     callback: () => {
+        //         for (let i = 0; i < this.stars.length; i++) {
+        //             this.enemyBullets.fire(this.stars[i].x, this.stars[i].y, 0, 150);
+        //         }
+        //     }
+        // });
+
+
         this.physics.world.on('worldbounds', (body) => {
             body.gameObject.onWorldBounds();
         });
@@ -182,8 +254,6 @@ class BulletScene04 extends Phaser.Scene {
         this.input.on('pointerdown', () => {
             this.bullets.fire(this.avatar.x, this.avatar.y, 0, -300);
         });
-
-        this.current = "A";
 
     }
 

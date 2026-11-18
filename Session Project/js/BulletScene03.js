@@ -3,9 +3,11 @@ class BulletScene03 extends Phaser.Scene {
         super({
             key: `BulletScene03`
         });
-        this.followerBullets = [];
         this.state = "dialogue";
         this.dialogueText = [];
+        this.movementPoints = [];
+        this.storedMovementPoints = [];
+        this.followerBullets = [];
     }
     bullets;
     enemy;
@@ -83,21 +85,21 @@ class BulletScene03 extends Phaser.Scene {
 
 
         // creates the enemey and makes him move and fire 
-        this.enemy = this.physics.add.sprite(256, 128, 'enemy', 1);
+        this.enemy = this.physics.add.sprite(400, 375, 'enemy', 1);
         this.enemy.setBodySize(160, 64);
         // Hit points
         this.enemy.state = 5;
 
-        this.enemyMoving = this.tweens.add({
-            targets: this.enemy.body.velocity,
-            props: {
-                x: { from: 150, to: -150, duration: 4000 },
-                y: { from: 50, to: -50, duration: 2000 }
-            },
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1
-        });
+        // this.enemyMoving = this.tweens.add({
+        //     targets: this.enemy.body.velocity,
+        //     props: {
+        //         x: { from: 150, to: -150, duration: 4000 },
+        //         y: { from: 50, to: -50, duration: 2000 }
+        //     },
+        //     ease: 'Sine.easeInOut',
+        //     yoyo: true,
+        //     repeat: -1
+        // });
 
         // // Makes the enemy fire bullets
         // this.enemyFiring = this.time.addEvent({
@@ -180,6 +182,43 @@ class BulletScene03 extends Phaser.Scene {
             // };
         });
 
+        // Creates the points where the enemy move to
+        for (let i = 0; i < 60; i++) {
+            const point = this.add.circle(Phaser.Math.Between(30, 770), Phaser.Math.Between(60, 730), 2, 0x00ff00);
+            this.movementPoints.push(point);
+        }
+
+        // Makes the enemy move from one point to another every 2 seconds and makes sure that the enemy doesn't move to the same point twice in a row
+        this.enemyMovement = this.time.addEvent({
+            delay: 2000,
+            loop: true,
+            callback: () => {
+                if (this.state === "gameplay") {
+                    let movementPoint = this.movementPoints[Phaser.Math.Between(0, this.movementPoints.length - 1)];
+                    for (let i = 0; i < this.movementPoints.length; i++) {
+                        if (this.storedMovementPoints[i] === movementPoint) {
+                            movementPoint = this.movementPoints[Phaser.Math.Between(0, this.movementPoints.length - 1)];
+                        }
+                        else {
+                            this.tweens.add({
+                                targets: this.enemy,
+                                props: {
+                                    x: { from: this.enemy.x, to: movementPoint.x, duration: 2000 },
+                                    y: { from: this.enemy.y, to: movementPoint.y, duration: 2000 }
+                                },
+                                ease: 'Sine.easeInOut',
+                                yoyo: false,
+                                repeat: 0
+                            });
+                            this.storedMovementPoints.push(movementPoint);
+                            i == 0;
+                        }
+                    }
+                }
+            }
+        });
+
+        // Makes the enemy fire bullets that follow them every 1.5 seconds.
         this.time.addEvent({
             delay: 1550,
             loop: true,
@@ -209,6 +248,7 @@ class BulletScene03 extends Phaser.Scene {
             }
         });
 
+        // Makes the bullets fired by the enemy follow the enemy's position every 1.5 seconds
         this.time.addEvent({
             delay: 1550,
             loop: true,
@@ -218,10 +258,6 @@ class BulletScene03 extends Phaser.Scene {
                 }
             }
         });
-
-
-
-
 
         this.physics.world.on('worldbounds', (body) => {
             body.gameObject.onWorldBounds();

@@ -49,6 +49,7 @@ class BulletScene01 extends Phaser.Scene {
         this.followerBullets = [];
         this.state = "dialogue";
         this.dialogueText = [];
+        this.attackTiming = 750;
     }
     bullets;
     enemy;
@@ -128,7 +129,7 @@ class BulletScene01 extends Phaser.Scene {
 
         // creates the enemey and makes him move and fire
         // The enemy will fire large projectiles and smaller projectiles will follow close by
-        this.enemy = this.physics.add.sprite(256, 128, 'enemy', 1);
+        this.enemy = this.physics.add.sprite(400, 128, 'enemy', 1);
         this.enemy.setBodySize(160, 64);
         // Hit points
         this.enemy.state = 5;
@@ -145,26 +146,26 @@ class BulletScene01 extends Phaser.Scene {
         });
 
         // Makes the enemy fire bullets
-        this.enemyFiring = this.time.addEvent({
-            delay: 750,
-            loop: true,
-            callback: () => {
-                if (this.state === "gameplay") {
-                    this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
-                }
-            }
-        });
+        // this.enemyFiring = this.time.addEvent({
+        //     delay: this.attackTiming,
+        //     loop: true,
+        //     callback: () => {
+        //         if (this.state === "gameplay") {
+        //             this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+        //         }
+        //     }
+        // });
 
         // Makes the enemy fire bigger bullets
-        this.enemyBigFiring = this.time.addEvent({
-            delay: 550,
-            loop: true,
-            callback: () => {
-                if (this.state === "gameplay") {
-                    this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
-                }
-            }
-        });
+        // this.enemyBigFiring = this.time.addEvent({
+        //     delay: 550,
+        //     loop: true,
+        //     callback: () => {
+        //         if (this.state === "gameplay") {
+        //             this.enemyBigBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+        //         }
+        //     }
+        // });
 
         // Makes the bullets fired by the enemy spawn smaller bullets that follow the player
         this.time.addEvent({
@@ -179,6 +180,7 @@ class BulletScene01 extends Phaser.Scene {
                             const followingBullet = this.physics.add.sprite(enemyBulletControl.x, enemyBulletControl.y, 'bullet');
                             // followingBullet.setBounce(1);
                             // followingBullet.setCollideWorldBounds(true);
+                            followingBullet.setBodySize(16, 16);
                             followingBullet.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
                             this.followerBullets.push(followingBullet);
 
@@ -271,16 +273,64 @@ class BulletScene01 extends Phaser.Scene {
             // };
         });
 
+        // Creates the dialogue lines that will be displayed at the beginning of the game
+        this.dialogueText = [
+            "Enemy: I applaud your courage, but will it appease my boredom?",
+            "Enemy: I'll be generous and let you adjust this fight to your liking, but I will not go easy on you.",
+            "Enemy: At what cadence do you wish for me to fire my bullets? I can fire them at a slow pace, or I can fire them at a fast pace. Tell me in milliseconds.",
+            "Enemy: Prepare to be defeated!"
+        ];
+
+        // Displays the dialogue lines at the beginning of the game
+        this.dialogueIndex = 0;
+        this.dialogueBox = this.add.text(400, 700, this.dialogueText[this.dialogueIndex], {
+            font: '20px monospace',
+            fill: 'white',
+            backgroundColor: 'green',
+            padding: { x: 10, y: 5 },
+            align: 'center'
+        }).setOrigin(0.5);
+
+        this.input.on('pointerdown', () => {
+            if (this.state === "dialogue") {
+                this.dialogueIndex++;
+                if (this.dialogueIndex < this.dialogueText.length) {
+                    this.dialogueBox.setText(this.dialogueText[this.dialogueIndex]);
+                } else {
+                    this.dialogueBox.destroy();
+                    this.state = "gameplay";
+                    this.bullets.fire(this.avatar.x, this.avatar.y, 0, -300);
+                }
+
+                if (this.dialogueIndex === 2) {
+                    this.state = "enterAttackSpeedParameter";
+                }
+            }
+        });
+
+        // Enables the player to type out text and set various parameters for the game, such as the speed at which the enemy fires bullets and more
+        const textEntry = this.add.text(10, 50, '', { font: '32px Courier', fill: '#ffff00' });
+
+        this.input.keyboard.on('keydown', event => {
+            if (event.keyCode === 8 && textEntry.text.length > 0 && this.state != "gameplay") {
+                textEntry.text = textEntry.text.substr(0, textEntry.text.length - 1);
+            }
+            else if (event.keyCode === 32 || (event.keyCode >= 48 && event.keyCode <= 90) && this.state != "gameplay") {
+                textEntry.text += event.key;
+            }
+            else if (event.keyCode === 13 && this.state != "gameplay") {
+                // Handle Enter key press
+                if (this.state === "enterAttackSpeedParameter") {
+                    this.attackTiming = parseInt(textEntry.text);
+                    textEntry.text = '';
+                    this.state = "attackSpeedParameterSet";
+                }
+            }
+        });
+
         this.physics.world.on('worldbounds', (body) => {
             body.gameObject.onWorldBounds();
         });
-
-        this.input.on('pointerdown', () => {
-            this.bullets.fire(this.avatar.x, this.avatar.y, 0, -300);
-            this.state = "gameplay";
-        });
-
-
     }
 
     update(time, delta) {
@@ -288,6 +338,7 @@ class BulletScene01 extends Phaser.Scene {
             this.handleInput();
         };
 
+        this.createAttackEvents();
         this.controlBullets();
 
         // this.stars.y += 1;
@@ -353,6 +404,21 @@ class BulletScene01 extends Phaser.Scene {
                 this.avatar.play('idle animation');
             };
         });
+    }
+
+    createAttackEvents() {
+        if (this.state === "attackSpeedParameterSet") {
+            this.enemyFiring = this.time.addEvent({
+                delay: this.attackTiming,
+                loop: true,
+                callback: () => {
+                    if (this.state === "gameplay") {
+                        this.enemyBullets.fire(this.enemy.x, this.enemy.y + 32, 0, 150);
+                    }
+                }
+            });
+            this.state = "dialogue";
+        }
     }
 
     // Controls the movement of bullets fired by both the player and the enemy
